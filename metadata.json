@@ -1,0 +1,5 @@
+{
+  "name": "身份证智能识别转 Excel",
+  "description": "基于 Gemini AI 的高精度身份证 OCR 工具，支持批量识别、自动提取字段并导出为 Excel 表格。",
+  "requestFramePermissions": []
+}
