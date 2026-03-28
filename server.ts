@@ -53,7 +53,7 @@ app.post('/api/ocr', async (req, res) => {
     });
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash-lite-preview",
       contents: [
         {
           parts: [
@@ -82,8 +82,25 @@ app.post('/api/ocr', async (req, res) => {
     
     // Check if it's a Quota Exceeded error (429)
     if (err.status === 429 || (err.message && err.message.includes('429'))) {
+      let retryAfter = 60; // Default to 60 seconds
+      try {
+        // Try to extract retry delay from the error message if it's JSON
+        const errorBody = JSON.parse(err.message.substring(err.message.indexOf('{')));
+        if (errorBody.details) {
+          const retryInfo = errorBody.details.find((d: any) => d['@type'] === 'type.googleapis.com/google.rpc.RetryInfo');
+          if (retryInfo && retryInfo.retryDelay) {
+            // retryDelay is usually a string like "37s" or "37.393399832s"
+            retryAfter = parseFloat(retryInfo.retryDelay) || 60;
+          }
+        }
+      } catch (e) {
+        // Fallback if parsing fails
+      }
+
+      console.log(`Quota exceeded. Suggested retry after: ${retryAfter}s`);
       return res.status(429).json({
-        error: "API 免费额度已用完（每分钟 15 次请求限制）。请稍等一分钟后再试，或者在 Google AI Studio 绑定信用卡升级为付费计划。"
+        error: `API 频率限制。请等待约 ${Math.ceil(retryAfter)} 秒后重试。`,
+        retryAfter: Math.ceil(retryAfter)
       });
     }
     

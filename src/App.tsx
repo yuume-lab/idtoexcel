@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { 
   Upload, 
@@ -47,7 +47,31 @@ const ID_CARD_SCHEMA = null; // Removed, handled on server
 export default function App() {
   const [items, setItems] = useState<IDCardData[]>([]);
   const [tableName, setTableName] = useState('2020年11月15日-20日巴马双飞6日');
+  const [processingQueue, setProcessingQueue] = useState<{file: File, id: string}[]>([]);
+  const [activeCount, setActiveCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- Queue Logic ---
+  useEffect(() => {
+    const processQueue = async () => {
+      // Use concurrency of 1 to be very safe with free tier limits
+      if (activeCount >= 1 || processingQueue.length === 0) return;
+
+      const next = processingQueue[0];
+      setProcessingQueue(prev => prev.slice(1));
+      setActiveCount(prev => prev + 1);
+      
+      try {
+        await processImageWithRetry(next.file, next.id);
+        // Add a small delay between successful requests to be safe
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } finally {
+        setActiveCount(prev => prev - 1);
+      }
+    };
+
+    processQueue();
+  }, [processingQueue, activeCount]);
 
   // --- Gemini Logic ---
   const compressImage = (file: File, maxWidth = 1280): Promise<string> => {
@@ -84,7 +108,7 @@ export default function App() {
     });
   };
 
-  const processImage = async (file: File, itemId: string) => {
+  const processImageWithRetry = async (file: File, itemId: string, retryCount = 0) => {
     try {
       setItems(prev => prev.map(item => 
         item.id === itemId ? { ...item, status: 'processing' } : item
@@ -101,6 +125,22 @@ export default function App() {
       });
 
       if (!response.ok) {
+        // If we hit rate limit (429), wait and retry up to 5 times
+        if (response.status === 429 && retryCount < 5) {
+          let retryAfter = 10; // Default to 10 seconds
+          try {
+            const errorData = await response.json();
+            retryAfter = errorData.retryAfter || retryAfter;
+          } catch (e) {}
+
+          setItems(prev => prev.map(item => 
+            item.id === itemId ? { ...item, status: 'processing', error: `频率限制，${Math.ceil(retryAfter)} 秒后进行第 ${retryCount + 1} 次重试...` } : item
+          ));
+          // Wait for the specified time + 2 seconds jitter
+          await new Promise(resolve => setTimeout(resolve, (retryAfter + 2) * 1000));
+          return processImageWithRetry(file, itemId, retryCount + 1);
+        }
+
         let errorMessage = '识别失败';
         try {
           const errorData = await response.json();
@@ -124,7 +164,8 @@ export default function App() {
           ...item, 
           ...result, 
           age: calculatedAge,
-          status: 'success' 
+          status: 'success',
+          error: undefined
         } : item
       ));
     } catch (error) {
@@ -163,10 +204,12 @@ export default function App() {
 
     setItems(prev => [...prev, ...newItems]);
     
-    // Auto start processing
-    files.forEach((file, index) => {
-      processImage(file, newItems[index].id);
-    });
+    // Add to queue instead of processing immediately
+    const queueItems = files.map((file, index) => ({
+      file,
+      id: newItems[index].id
+    }));
+    setProcessingQueue(prev => [...prev, ...queueItems]);
   };
 
   const handleDrop = (e: React.DragEvent) => {
