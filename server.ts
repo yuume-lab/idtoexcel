@@ -80,6 +80,13 @@ app.post('/api/ocr', async (req, res) => {
       });
     }
     
+    // Check if it's a Quota Exceeded error (429)
+    if (err.status === 429 || (err.message && err.message.includes('429'))) {
+      return res.status(429).json({
+        error: "API 免费额度已用完（每分钟 15 次请求限制）。请稍等一分钟后再试，或者在 Google AI Studio 绑定信用卡升级为付费计划。"
+      });
+    }
+    
     res.status(500).json({ error: err.message });
   }
 });
