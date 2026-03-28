@@ -40,7 +40,6 @@ interface IDCardData {
   notes: string;
   status: 'pending' | 'processing' | 'success' | 'error';
   error?: string;
-  previewUrl?: string;
 }
 
 const ID_CARD_SCHEMA = null; // Removed, handled on server
@@ -51,44 +50,11 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Gemini Logic ---
-  const processImage = async (file: File, itemId: string, useLocal: boolean) => {
+  const processImage = async (file: File, itemId: string) => {
     try {
       setItems(prev => prev.map(item => 
         item.id === itemId ? { ...item, status: 'processing' } : item
       ));
-
-      if (useLocal) {
-        // --- Local OCR (Tesseract.js) ---
-        const { createWorker } = await import('tesseract.js');
-        const worker = await createWorker('chi_sim+eng', 1, {
-          workerPath: 'https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/tesseract.js/5.0.3/worker.min.js',
-          langPath: 'https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/tessdata/4.0.0_fast',
-          corePath: 'https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/tesseract.js-core/5.0.3/tesseract-core.wasm.js',
-        });
-        const { data: { text } } = await worker.recognize(file);
-        await worker.terminate();
-        
-        // Simple regex fallback for Tesseract
-        const idMatch = text.replace(/\s+/g, "").match(/\d{17}[\dX]/);
-        const nameMatch = text.match(/(姓名|姓各|娃各|姓|名)[:：]?([\u4e00-\u9fa5]{2,4})/);
-        
-        const idNum = idMatch ? idMatch[0] : '';
-        let calculatedAge = '';
-        if (idNum.length === 18) {
-          calculatedAge = (new Date().getFullYear() - parseInt(idNum.substring(6, 10))).toString();
-        }
-
-        setItems(prev => prev.map(item => 
-          item.id === itemId ? { 
-            ...item, 
-            name: nameMatch ? nameMatch[2] : '未识别',
-            idNumber: idNum,
-            age: calculatedAge,
-            status: 'success' 
-          } : item
-        ));
-        return;
-      }
 
       // --- Server-side OCR ---
       const reader = new FileReader();
@@ -144,8 +110,6 @@ export default function App() {
   };
 
   // --- Handlers ---
-  const [useLocalOCR, setUseLocalOCR] = useState(false);
-
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     addFiles(files);
@@ -164,15 +128,14 @@ export default function App() {
       phone: '',
       original: '',
       notes: '',
-      status: 'pending',
-      previewUrl: URL.createObjectURL(file)
+      status: 'pending'
     }));
 
     setItems(prev => [...prev, ...newItems]);
     
     // Auto start processing
     files.forEach((file, index) => {
-      processImage(file, newItems[index].id, useLocalOCR);
+      processImage(file, newItems[index].id);
     });
   };
 
@@ -252,21 +215,6 @@ export default function App() {
             <p className="text-sm text-black/50 mt-1">基于 Gemini AI 的高精度 OCR 识别工具</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-[#F5F5F5] px-3 py-2 rounded-xl border border-black/5">
-              <span className="text-xs font-medium text-black/40">本地 OCR</span>
-              <button 
-                onClick={() => setUseLocalOCR(!useLocalOCR)}
-                className={cn(
-                  "w-10 h-5 rounded-full relative transition-colors",
-                  useLocalOCR ? "bg-green-500" : "bg-black/10"
-                )}
-              >
-                <div className={cn(
-                  "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
-                  useLocalOCR ? "left-6" : "left-1"
-                )} />
-              </button>
-            </div>
             <input 
               type="text" 
               value={tableName}
@@ -334,7 +282,6 @@ export default function App() {
                 <table className="w-full text-sm text-left border-collapse">
                   <thead>
                     <tr className="bg-[#F5F5F5]/50 text-black/40 font-medium">
-                      <th className="px-4 py-4 font-medium">预览</th>
                       <th className="px-4 py-4 font-medium">姓名</th>
                       <th className="px-4 py-4 font-medium">性别</th>
                       <th className="px-4 py-4 font-medium">身份证号</th>
@@ -355,15 +302,6 @@ export default function App() {
                           exit={{ opacity: 0, scale: 0.95 }}
                           className="group hover:bg-black/[0.01] transition-colors"
                         >
-                          <td className="px-4 py-4">
-                            <div className="w-12 h-8 rounded-md bg-[#F5F5F5] overflow-hidden border border-black/5">
-                              {item.previewUrl ? (
-                                <img src={item.previewUrl} alt="preview" className="w-full h-full object-cover" />
-                              ) : (
-                                <ImageIcon className="w-full h-full p-2 text-black/20" />
-                              )}
-                            </div>
-                          </td>
                           <td className="px-4 py-4">
                             <input 
                               type="text" 
@@ -451,7 +389,7 @@ export default function App() {
                     </AnimatePresence>
                     {items.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="px-6 py-12 text-center text-black/30 italic">
+                        <td colSpan={8} className="px-6 py-12 text-center text-black/30 italic">
                           暂无数据，请上传图片开始识别
                         </td>
                       </tr>
