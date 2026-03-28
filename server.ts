@@ -37,9 +37,15 @@ app.post('/api/ocr', async (req, res) => {
   }
 
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Clean the API key to remove accidental whitespace or quotes
+    // Use CUSTOM_GEMINI_API_KEY first, fallback to GEMINI_API_KEY for Vercel
+    let apiKey = (process.env.CUSTOM_GEMINI_API_KEY || process.env.GEMINI_API_KEY)?.trim();
+    if (apiKey && apiKey.startsWith('"') && apiKey.endsWith('"')) {
+      apiKey = apiKey.slice(1, -1);
+    }
+    
     if (!apiKey) {
-      console.error("GEMINI_API_KEY is missing in environment variables");
+      console.error("API Key is missing in environment variables");
       return res.status(500).json({ error: "API Key is not configured on the server." });
     }
 
@@ -67,6 +73,14 @@ app.post('/api/ocr', async (req, res) => {
     res.json(result);
   } catch (err: any) {
     console.error("Gemini OCR Error:", err);
+    
+    // Check if it's an API Key error
+    if (err.message && err.message.includes('API_KEY_INVALID')) {
+      return res.status(400).json({ 
+        error: "API Key 无效。请检查 Vercel 环境变量中的 GEMINI_API_KEY 是否正确，并确保重新部署了项目。" 
+      });
+    }
+    
     res.status(500).json({ error: err.message });
   }
 });

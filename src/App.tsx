@@ -415,16 +415,19 @@ export default function App() {
                             {item.status === 'processing' && (
                               <div className="flex items-center gap-2 text-blue-500">
                                 <Loader2 className="w-4 h-4 animate-spin" />
+                                <span className="text-xs">识别中...</span>
                               </div>
                             )}
                             {item.status === 'success' && (
                               <div className="flex items-center gap-2 text-green-500">
                                 <CheckCircle2 className="w-4 h-4" />
+                                <span className="text-xs">成功</span>
                               </div>
                             )}
                             {item.status === 'error' && (
-                              <div className="flex items-center gap-2 text-red-500">
-                                <AlertCircle className="w-4 h-4" />
+                              <div className="flex items-center gap-1 text-red-500" title={item.error}>
+                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                <span className="text-xs truncate max-w-[100px]">{item.error}</span>
                               </div>
                             )}
                           </td>
