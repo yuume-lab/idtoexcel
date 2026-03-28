@@ -50,6 +50,40 @@ export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Gemini Logic ---
+  const compressImage = (file: File, maxWidth = 1280): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve((event.target?.result as string).split(',')[1]);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl.split(',')[1]);
+        };
+        img.onerror = (error) => reject(error);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const processImage = async (file: File, itemId: string) => {
     try {
       setItems(prev => prev.map(item => 
@@ -57,17 +91,13 @@ export default function App() {
       ));
 
       // --- Server-side OCR ---
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve) => {
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.readAsDataURL(file);
-      });
-      const base64Data = await base64Promise;
+      // Compress image before sending to save bandwidth and speed up Gemini processing
+      const base64Data = await compressImage(file);
 
       const response = await fetch('/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base64Data, mimeType: file.type })
+        body: JSON.stringify({ base64Data, mimeType: 'image/jpeg' })
       });
 
       if (!response.ok) {
