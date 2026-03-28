@@ -259,8 +259,8 @@ export default function App() {
     ws['!cols'] = [
       { wch: 6 },  // 序号
       { wch: 12 }, // 姓名
-      { wch: 8 },  // 性别
-      { wch: 22 }, // 身份证号
+      { wch: 6 },  // 性别
+      { wch: 24 }, // 身份证号
       { wch: 6 },  // 年龄
       { wch: 15 }, // 手机号码
       { wch: 20 }, // 备注
@@ -355,14 +355,14 @@ export default function App() {
                 <table className="w-full text-sm text-left border-collapse">
                   <thead>
                     <tr className="bg-[#F5F5F5]/50 text-black/40 font-medium">
-                      <th className="px-4 py-4 font-medium">姓名</th>
-                      <th className="px-4 py-4 font-medium">性别</th>
-                      <th className="px-4 py-4 font-medium">身份证号</th>
-                      <th className="px-4 py-4 font-medium">年龄</th>
-                      <th className="px-4 py-4 font-medium">手机号码</th>
-                      <th className="px-4 py-4 font-medium">备注</th>
-                      <th className="px-4 py-4 font-medium">状态</th>
-                      <th className="px-4 py-4 font-medium text-right">操作</th>
+                      <th className="px-4 py-4 font-medium w-24">姓名</th>
+                      <th className="px-4 py-4 font-medium w-16">性别</th>
+                      <th className="px-4 py-4 font-medium min-w-[220px]">身份证号</th>
+                      <th className="px-4 py-4 font-medium w-16">年龄</th>
+                      <th className="px-4 py-4 font-medium w-32">手机号码</th>
+                      <th className="px-4 py-4 font-medium min-w-[120px]">备注</th>
+                      <th className="px-4 py-4 font-medium w-32">状态</th>
+                      <th className="px-4 py-4 font-medium text-right w-20">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black/5">
