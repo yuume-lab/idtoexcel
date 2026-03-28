@@ -105,8 +105,15 @@ export default function App() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '识别失败');
+        let errorMessage = '识别失败';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // If the server returns a non-JSON response (like a 502 Bad Gateway HTML page from Vercel)
+          errorMessage = `服务器错误 (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
