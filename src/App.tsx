@@ -14,7 +14,8 @@ import {
   AlertCircle, 
   Loader2,
   Copy,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -277,6 +278,23 @@ export default function App() {
     navigator.clipboard.writeText(text);
   };
 
+  const handleAddRow = () => {
+    const newId = Math.random().toString(36).substring(7);
+    setItems(prev => [
+      ...prev,
+      {
+        id: newId,
+        name: '',
+        gender: '',
+        idNumber: '',
+        age: '',
+        phone: '',
+        notes: '',
+        status: 'success'
+      }
+    ]);
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F5] text-[#1A1A1A] font-sans p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -343,12 +361,20 @@ export default function App() {
                   识别列表
                   <span className="bg-[#F5F5F5] text-xs px-2 py-1 rounded-full text-black/60">{items.length}</span>
                 </h2>
-                <button 
-                  onClick={() => setItems([])}
-                  className="text-xs text-red-500 hover:underline flex items-center gap-1"
-                >
-                  <Trash2 className="w-3 h-3" /> 清空列表
-                </button>
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={handleAddRow}
+                    className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> 手动添加
+                  </button>
+                  <button 
+                    onClick={() => setItems([])}
+                    className="text-xs text-red-500 hover:underline flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3 h-3" /> 清空列表
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
