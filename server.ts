@@ -16,8 +16,9 @@ const ID_CARD_SCHEMA = {
     birthDate: { type: Type.STRING, description: "出生日期 (YYYY-MM-DD)" },
     address: { type: Type.STRING, description: "住址" },
     idNumber: { type: Type.STRING, description: "公民身份号码" },
+    passportNumber: { type: Type.STRING, description: "护照号（如果有）" },
   },
-  required: ["name", "idNumber"],
+  required: ["name"],
 };
 
 const app = express();
@@ -57,7 +58,7 @@ app.post('/api/ocr', async (req, res) => {
       contents: [
         {
           parts: [
-            { text: "请识别这张中国身份证正面的所有信息，并以 JSON 格式输出。如果信息不清晰，请尽力识别。" },
+            { text: "请识别这张证件（如中国身份证、护照等）正面的所有信息，并以 JSON 格式输出。如果信息不清晰，请尽力识别。" },
             { inlineData: { data: base64Data, mimeType: mimeType || 'image/jpeg' } }
           ]
         }

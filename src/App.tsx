@@ -35,6 +35,7 @@ interface IDCardData {
   birthDate: string;
   address: string;
   idNumber: string;
+  passportNumber?: string;
   age: string;
   phone: string;
   original: string;
@@ -196,6 +197,7 @@ export default function App() {
       birthDate: '',
       address: '',
       idNumber: '',
+      passportNumber: '',
       age: '',
       phone: '',
       original: '',
@@ -232,7 +234,7 @@ export default function App() {
   const exportToExcel = () => {
     // 1. Prepare title and headers
     const title = [[tableName]];
-    const headers = [['序号', '姓名', '性别', '身份证号', '年龄', '手机号码', '备注']];
+    const headers = [['序号', '姓名', '性别', '身份证号', '护照号', '年龄', '手机号码', '备注']];
     
     // 2. Prepare data rows
     const dataRows = items.map((item, index) => [
@@ -240,6 +242,7 @@ export default function App() {
       item.name,
       item.gender,
       item.idNumber,
+      item.passportNumber || '',
       item.age,
       item.phone,
       item.notes
@@ -253,7 +256,7 @@ export default function App() {
 
     // 5. Apply Merges (Title row across all columns)
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } } // Merge A1 to G1
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } } // Merge A1 to H1
     ];
 
     // 6. Set column widths
@@ -262,6 +265,7 @@ export default function App() {
       { wch: 12 }, // 姓名
       { wch: 6 },  // 性别
       { wch: 24 }, // 身份证号
+      { wch: 15 }, // 护照号
       { wch: 6 },  // 年龄
       { wch: 15 }, // 手机号码
       { wch: 20 }, // 备注
@@ -287,6 +291,7 @@ export default function App() {
         name: '',
         gender: '',
         idNumber: '',
+        passportNumber: '',
         age: '',
         phone: '',
         notes: '',
@@ -384,6 +389,7 @@ export default function App() {
                       <th className="px-4 py-4 font-medium w-24">姓名</th>
                       <th className="px-4 py-4 font-medium w-16">性别</th>
                       <th className="px-4 py-4 font-medium min-w-[220px]">身份证号</th>
+                      <th className="px-4 py-4 font-medium min-w-[150px]">护照号</th>
                       <th className="px-4 py-4 font-medium w-16">年龄</th>
                       <th className="px-4 py-4 font-medium w-32">手机号码</th>
                       <th className="px-4 py-4 font-medium min-w-[120px]">备注</th>
@@ -426,6 +432,15 @@ export default function App() {
                               onChange={(e) => updateField(item.id, 'idNumber', e.target.value)}
                               className="bg-transparent border-none p-0 focus:ring-0 w-full"
                               placeholder="身份证号"
+                            />
+                          </td>
+                          <td className="px-4 py-4 font-mono text-xs">
+                            <input 
+                              type="text" 
+                              value={item.passportNumber || ''}
+                              onChange={(e) => updateField(item.id, 'passportNumber', e.target.value)}
+                              className="bg-transparent border-none p-0 focus:ring-0 w-full"
+                              placeholder="护照号"
                             />
                           </td>
                           <td className="px-4 py-4">
